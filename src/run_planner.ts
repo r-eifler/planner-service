@@ -1,5 +1,6 @@
 import {spawn} from 'child_process';
 import * as fs from 'fs';
+import request from 'request';
 
 export enum RunStatus {
   PENDING = "PENDING",
@@ -14,8 +15,8 @@ const plans_folder = "plans"
 export class PlanRun{
 
     public id: string;
-    private domain: Express.Multer.File;
-    private problem: Express.Multer.File;
+    public domain: Express.Multer.File;
+    public problem: Express.Multer.File;
     public status: RunStatus;
 
     constructor(id: string, domain: Express.Multer.File, problem: Express.Multer.File) {
@@ -28,42 +29,75 @@ export class PlanRun{
 
     }
 
+  }
 
-    run() {
-      let that = this
+export async function schedule_run(plan_run: PlanRun, callback: string) {
 
-      // create result folder
-      let plan_folder_path = plans_folder + '/plan' + this.id
+    await run(plan_run);
 
-      return new Promise(function (resolve, reject) {
-        const args = ['--plan-file', plan_folder_path, that.domain.path, that.problem.path, '--search', 'astar(hmax())']
-        that.status = RunStatus.RUNNING
-        const process = spawn(planner, args);
-        process.on('close', function (code) { 
-          if(code == 0){
-            that.status = RunStatus.FINISHED
-            console.log("Close: " + code)
-          }
-          resolve(code);
-        });
-        process.on('error', function (err) {
-          that.status = RunStatus.FAILED
-          reject(err);
-        });
+    let data = {
+        id: plan_run.id,
+        status: plan_run.status,
+        plan: []
+    }
+
+    if(plan_run.status == RunStatus.FINISHED){
+        data.plan = get_plan(plan_run)
+    }
+
+    request.post(
+        {
+        url: callback,
+        json: data,
+        headers: {
+            'Content-Type': 'application/json'
+        }
+        },
+      function(error, response, body){
+        // console.log(error);
+        // console.log(response);
+        // console.log(body);
+        console.log("callback sent: " + plan_run.id)
       });
-    }
 
-    get_plan(){
-      if(this.status != RunStatus.FINISHED){
-        return null
-      }
+  }
 
-      let plan_folder_path = plans_folder + '/plan' + this.id
-      let raw_plan = fs.readFileSync(plan_folder_path,'utf8');
 
-      let plan_actions = raw_plan.split('\n');
-      return plan_actions.filter(a => ! a.startsWith(';') && a.length > 0)
+function run(plan_run: PlanRun) {
 
-    }
+    // create result folder
+    let plan_folder_path = plans_folder + '/plan' + plan_run.id
+
+    return new Promise(function (resolve, reject) {
+      const args = ['--plan-file', plan_folder_path, plan_run.domain.path, plan_run.problem.path, '--search', 'astar(hmax())']
+      plan_run.status = RunStatus.RUNNING
+      const process = spawn(planner, args);
+      process.on('close', function (code) { 
+        if(code == 0){
+          plan_run.status = RunStatus.FINISHED
+          // console.log("Close: " + code)
+        }
+        resolve(code);
+      });
+      process.on('error', function (err) {
+        plan_run.status = RunStatus.FAILED
+        // console.log("Error: " + err)
+        reject(err);
+      });
+    });
+  }
+
+  
+function get_plan(plan_run: PlanRun){
+  if(plan_run.status != RunStatus.FINISHED){
+    return null
+  }
+
+  let plan_folder_path = plans_folder + '/plan' + plan_run.id
+  let raw_plan = fs.readFileSync(plan_folder_path,'utf8');
+
+  let plan_actions = raw_plan.split('\n');
+  return plan_actions.filter(a => ! a.startsWith(';') && a.length > 0)
 
 }
+

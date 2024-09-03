@@ -2,7 +2,7 @@ import express, { Express, Request, Response } from 'express';
 import multer, { Multer } from 'multer';
 import fs from 'fs'
 import { PlanRun, RunStatus } from '../run_planner';
-import request from 'request';
+import { agenda } from '..';
 
 
 export interface MulterFile {
@@ -54,38 +54,10 @@ plannerRouter.post('/', upload.any(), async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'No problem uploaded' });
     }
 
-    let plan_run = new PlanRun('1test', domain, problem);
+    let plan_run = new PlanRun('run-' + Date.now(), domain, problem);
 
     res.status(201).send({id: plan_run.id, status: plan_run.status});
 
-    let result = await plan_run.run();
-    console.log(req.body.callback)
-
-    let data = {
-        id: plan_run.id,
-        status: plan_run.status,
-        plan: []
-    }
-
-    if(plan_run.status == RunStatus.FINISHED){
-        data.plan = plan_run.get_plan()
-    }
-
-    request.post(
-        {
-        url:req.body.callback,
-        json: data,
-        headers: {
-            'Content-Type': 'application/json'
-        }
-        },
-      function(error, response, body){
-        console.log(error);
-        console.log(response);
-        console.log(body);
-        res.send(body);
-      });
-
-    console.log(plan_run.status)
+    agenda.now('planner call', [plan_run, req.body.callback])
     
 });
