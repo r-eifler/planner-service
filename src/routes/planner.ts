@@ -28,13 +28,15 @@ const storage = multer.diskStorage({
   const upload = multer({ storage: storage });
 
 
-plannerRouter.get('/', async (req: Request, res: Response) => {
+plannerRouter.get('/:id', async (req: Request, res: Response) => {
 
-    res.status(201).send({ name: 'FD Standard'});
+    // TODO return status of run with id 
+
+    res.status(201).send("TODO");
 });
 
 
-plannerRouter.post('/', upload.any(), async (req: Request, res: Response) => {
+plannerRouter.post('/files', upload.any(), async (req: Request, res: Response) => {
 
     // console.log(req.files);
 
@@ -54,10 +56,36 @@ plannerRouter.post('/', upload.any(), async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'No problem uploaded' });
     }
 
-    let plan_run = new PlanRun('run-' + Date.now(), domain, problem);
+    let plan_run = new PlanRun('run-' + Date.now(), domain.path, problem.path);
 
     res.status(201).send({id: plan_run.id, status: plan_run.status});
 
     agenda.now('planner call', [plan_run, req.body.callback])
     
+});
+
+
+plannerRouter.post('/', upload.any(), async (req: Request, res: Response) => {
+
+  // console.log(req);
+  // console.log(req.body)
+
+  let domain = req.body.domain as string
+  let problem = req.body.problem as string
+
+  // console.log(domain)
+
+  let domain_path = './uploads/' + Date.now() + 'domain.pddl'
+  let problem_path = './uploads/' + Date.now() + 'problem.pddl'
+
+
+  fs.writeFileSync(domain_path, domain);
+  fs.writeFileSync(problem_path, problem);
+
+  let plan_run = new PlanRun('run-' + Date.now(), domain_path, problem_path);
+
+  res.status(201).send({id: plan_run.id, status: plan_run.status});
+
+  agenda.now('planner call', [plan_run, req.body.callback])
+  
 });

@@ -4,7 +4,7 @@ import { Agenda } from "@hokify/agenda";
 import { PlanRun, schedule_run } from './run_planner';
 
 const app = express();
-const port = 3000;
+const port = 3333;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
