@@ -1,7 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import multer, { Multer } from 'multer';
 import fs from 'fs'
-import { PlanRun, RunStatus } from '../run_planner';
+import { create_base_plan_run, create_temp_goal_plan_run, PlanRun, PlanRunTempGoals, RunStatus } from '../run_planner';
 import { agenda } from '..';
 
 
@@ -56,7 +56,7 @@ plannerRouter.post('/files', upload.any(), async (req: Request, res: Response) =
         return res.status(400).json({ error: 'No problem uploaded' });
     }
 
-    let plan_run = new PlanRun('run-' + Date.now(), domain.path, problem.path);
+    let plan_run = create_base_plan_run('run-' + Date.now(), domain.path, problem.path);
 
     res.status(201).send({id: plan_run.id, status: plan_run.status});
 
@@ -65,15 +65,10 @@ plannerRouter.post('/files', upload.any(), async (req: Request, res: Response) =
 });
 
 
-plannerRouter.post('/', upload.any(), async (req: Request, res: Response) => {
-
-  // console.log(req);
-  // console.log(req.body)
+plannerRouter.post('/', async (req: Request, res: Response) => {
 
   let domain = req.body.domain as string
   let problem = req.body.problem as string
-
-  // console.log(domain)
 
   let domain_path = './uploads/' + Date.now() + 'domain.pddl'
   let problem_path = './uploads/' + Date.now() + 'problem.pddl'
@@ -82,7 +77,31 @@ plannerRouter.post('/', upload.any(), async (req: Request, res: Response) => {
   fs.writeFileSync(domain_path, domain);
   fs.writeFileSync(problem_path, problem);
 
-  let plan_run = new PlanRun('run-' + Date.now(), domain_path, problem_path);
+  let plan_run = create_base_plan_run('run-' + Date.now(), domain_path, problem_path);
+
+  res.status(201).send({id: plan_run.id, status: plan_run.status});
+
+  agenda.now('planner call', [plan_run, req.body.callback])
+  
+});
+
+
+plannerRouter.post('/temp-goals', async (req: Request, res: Response) => {
+
+  let domain = req.body.domain as string
+  let problem = req.body.problem as string
+  let temp_goals = req.body.temp_goals as string
+
+  let domain_path = './uploads/' + Date.now() + 'domain.pddl'
+  let problem_path = './uploads/' + Date.now() + 'problem.pddl'
+  let temp_goals_path = './uploads/' + Date.now() + 'temp_goals.json'
+
+
+  fs.writeFileSync(domain_path, domain);
+  fs.writeFileSync(problem_path, problem);
+  fs.writeFileSync(temp_goals_path, temp_goals)
+
+  let plan_run = create_temp_goal_plan_run('run-' + Date.now(), domain_path, problem_path, temp_goals_path);
 
   res.status(201).send({id: plan_run.id, status: plan_run.status});
 

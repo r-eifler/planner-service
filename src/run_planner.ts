@@ -11,21 +11,65 @@ export enum RunStatus {
   UNSOLVABLE = "UNSOLVABLE"
 }
 
-const planner = "/home/rebecca/TUPLES/use_cases/beluga/apptainer/fast-downward.sif"
 const plans_folder = "plans"
 
-export class PlanRun{
+export interface PlanRun {
+  id: string,
+  status: RunStatus,
+  domain_path: string,
+  problem_path: string,
+  planner: string,
+  args: string[]
+}
 
-    public status: RunStatus;
-
-    constructor(public id: string, public domain_path: string, public problem_path: string) {
-        this.id = id;
-
-        this.status = RunStatus.PENDING
-
-    }
-
+export function create_base_plan_run(id: string, domain_path: string, problem_path: string): PlanRun {
+  return {
+    id,
+    status: RunStatus.PENDING,
+    domain_path,
+    problem_path,
+    planner: "/home/rebecca/TUPLES/use_cases/beluga/apptainer/fast-downward.sif",
+    args: [
+      '--plan-file', "plan_path", 
+      domain_path, 
+      problem_path, 
+      '--search', 'astar(hmax())'
+    ]
   }
+}
+
+export interface PlanRunTempGoals extends PlanRun{
+  id: string,
+  status: RunStatus,
+  domain_path: string,
+  problem_path: string,
+  temp_goals_path: string
+  planner: string,
+  args: string[]
+}
+
+export function create_temp_goal_plan_run(id: string, domain_path: string, problem_path: string, temp_goals_path: string): PlanRunTempGoals {
+  return {
+    id,
+    status: RunStatus.PENDING,
+    domain_path,
+    problem_path,
+    temp_goals_path,
+    planner: "/home/rebecca/XPP/framework/downward-xaip/fast-downward.py",
+    args: [
+      '--plan-file', 'plan_path', 
+      domain_path, 
+      problem_path, 
+      '--translate-options',
+      '--explanation-settings', temp_goals_path,
+      '--search-options',
+      '--search', 'astar(hmax())'
+      // 'gsastar(evals=[blind], eval=ngs(hmax(no_deadends=true)))'
+    ]
+  }
+}
+
+
 
 export async function schedule_run(plan_run: PlanRun, callback: string) {
 
@@ -34,11 +78,11 @@ export async function schedule_run(plan_run: PlanRun, callback: string) {
     let data = {
         id: plan_run.id,
         status: plan_run.status,
-        plan: []
+        actions: []
     }
 
     if(plan_run.status == RunStatus.SOLVED){
-        data.plan = get_plan(plan_run)
+        data.actions = get_plan(plan_run)
     }
 
     let payload = JSON.stringify(data);
@@ -68,18 +112,16 @@ export async function schedule_run(plan_run: PlanRun, callback: string) {
 function run(plan_run: PlanRun): Promise<PlanRun> {
 
     // create result folder
-    let plan_folder_path = plans_folder + '/plan' + plan_run.id
+    let plan_path = plans_folder + '/plan' + plan_run.id
 
     return new Promise(function (resolve, reject) {
-      const args = [
-        '--plan-file', plan_folder_path, 
-        plan_run.domain_path, 
-        plan_run.problem_path, 
-        '--search', 'astar(hmax())'
-      ]
-     
+
       plan_run.status = RunStatus.RUNNING
-      const process = spawn(planner, args);
+      let args = plan_run.args.map(a => a != 'plan_path' ? a : plan_path)
+
+      // console.log(plan_run.planner + ' ' + args.join(' '))
+
+      const process = spawn(plan_run.planner, args);
       process.on('close', function (code) { 
         switch(code) {
           case 0:
@@ -119,7 +161,7 @@ function get_plan(plan_run: PlanRun): Action[] {
 
   let actions: Action[] = []
   for(let raw_action of raw_plan_actions){
-    const parts = raw_action.replace(')','').replace(')','').split(' ');
+    const parts = raw_action.replace(')','').replace('(','').split(' ');
     const [name,...args] = parts;
     actions.push({name, arguments: args})
   }
