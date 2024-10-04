@@ -3,6 +3,7 @@ import multer, { Multer } from 'multer';
 import fs from 'fs'
 import { create_base_plan_run, create_temp_goal_plan_run, PlanRun, PlanRunTempGoals, RunStatus } from '../run_planner';
 import { agenda } from '..';
+import { toPDDL_domain, toPDDL_problem } from '../pddl';
 
 
 export interface MulterFile {
@@ -36,48 +37,47 @@ plannerRouter.get('/:id', async (req: Request, res: Response) => {
 });
 
 
-plannerRouter.post('/files', upload.any(), async (req: Request, res: Response) => {
+// plannerRouter.post('/files', upload.any(), async (req: Request, res: Response) => {
 
-    // console.log(req.files);
+//     // console.log(req.files);
 
-    if(!req.files){
-        return res.status(400).json({ error: 'No files uploaded' });
-    }
+//     if(!req.files){
+//         return res.status(400).json({ error: 'No files uploaded' });
+//     }
 
-    let files = req.files as Express.Multer.File[]
+//     let files = req.files as Express.Multer.File[]
 
-    let domain = files.find(f1 => f1.fieldname == 'domain')
-    if (!domain) {
-        return res.status(400).json({ error: 'No domain uploaded' });
-    }
+//     let domain = files.find(f1 => f1.fieldname == 'domain')
+//     if (!domain) {
+//         return res.status(400).json({ error: 'No domain uploaded' });
+//     }
 
-    let problem = files.find(f2 => f2.fieldname == 'problem')
-    if (!problem) {
-        return res.status(400).json({ error: 'No problem uploaded' });
-    }
+//     let problem = files.find(f2 => f2.fieldname == 'problem')
+//     if (!problem) {
+//         return res.status(400).json({ error: 'No problem uploaded' });
+//     }
 
-    let plan_run = create_base_plan_run('run-' + Date.now(), domain.path, problem.path);
+//     let plan_run = create_base_plan_run('run-' + Date.now(), domain.path, problem.path);
 
-    res.status(201).send({id: plan_run.id, status: plan_run.status});
+//     res.status(201).send({id: plan_run.id, status: plan_run.status});
 
-    agenda.now('planner call', [plan_run, req.body.callback])
+//     agenda.now('planner call', [plan_run, req.body.callback])
     
-});
+// });
 
 
 plannerRouter.post('/', async (req: Request, res: Response) => {
 
-  let domain = req.body.domain as string
-  let problem = req.body.problem as string
+  let model = JSON.parse(req.body.model as string)
 
   let domain_path = './uploads/' + Date.now() + 'domain.pddl'
   let problem_path = './uploads/' + Date.now() + 'problem.pddl'
 
 
-  fs.writeFileSync(domain_path, domain);
-  fs.writeFileSync(problem_path, problem);
+  fs.writeFileSync(domain_path, toPDDL_domain(model));
+  fs.writeFileSync(problem_path, toPDDL_problem(model));;
 
-  let plan_run = create_base_plan_run('run-' + Date.now(), domain_path, problem_path);
+  let plan_run = create_base_plan_run('run-' + Date.now(), model, domain_path, problem_path);
 
   res.status(201).send({id: plan_run.id, status: plan_run.status});
 
@@ -88,8 +88,9 @@ plannerRouter.post('/', async (req: Request, res: Response) => {
 
 plannerRouter.post('/temp-goals', async (req: Request, res: Response) => {
 
-  let domain = req.body.domain as string
-  let problem = req.body.problem as string
+  console.log(req.body)
+
+  let model = JSON.parse(req.body.model as string)
   let temp_goals = req.body.temp_goals as string
 
   let domain_path = './uploads/' + Date.now() + 'domain.pddl'
@@ -97,11 +98,11 @@ plannerRouter.post('/temp-goals', async (req: Request, res: Response) => {
   let temp_goals_path = './uploads/' + Date.now() + 'temp_goals.json'
 
 
-  fs.writeFileSync(domain_path, domain);
-  fs.writeFileSync(problem_path, problem);
+  fs.writeFileSync(domain_path, toPDDL_domain(model));
+  fs.writeFileSync(problem_path, toPDDL_problem(model));
   fs.writeFileSync(temp_goals_path, temp_goals)
 
-  let plan_run = create_temp_goal_plan_run('run-' + Date.now(), domain_path, problem_path, temp_goals_path);
+  let plan_run = create_temp_goal_plan_run('run-' + Date.now(), model, domain_path, problem_path, temp_goals_path);
 
   res.status(201).send({id: plan_run.id, status: plan_run.status});
 

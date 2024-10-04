@@ -12,16 +12,17 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/plan', plannerRouter);
 
-
+console.log(process.env['PLANNER'])
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 
 
+const mongodbURL = process.env.MONGO || 'localhost:27017/agenda-test';
 
 export const agenda = new Agenda({
-  db: {address: 'localhost:27017/agenda-test', collection: 'agendaJobs'},
+  db: {address: mongodbURL, collection: 'agendaJobs'},
   processEvery: '2 seconds',
   maxConcurrency: 1,
   defaultConcurrency: 1,

@@ -1,7 +1,7 @@
 import {spawn} from 'child_process';
 import * as fs from 'fs';
-import request from 'request';
 import { Action } from './interfaces';
+import { PlanningModel } from './pddl';
 
 export enum RunStatus {
   PENDING = "PENDING",
@@ -15,6 +15,7 @@ const plans_folder = "plans"
 
 export interface PlanRun {
   id: string,
+  model: PlanningModel,
   status: RunStatus,
   domain_path: string,
   problem_path: string,
@@ -22,9 +23,10 @@ export interface PlanRun {
   args: string[]
 }
 
-export function create_base_plan_run(id: string, domain_path: string, problem_path: string): PlanRun {
+export function create_base_plan_run(id: string, model: PlanningModel, domain_path: string, problem_path: string): PlanRun {
   return {
     id,
+    model,
     status: RunStatus.PENDING,
     domain_path,
     problem_path,
@@ -48,14 +50,16 @@ export interface PlanRunTempGoals extends PlanRun{
   args: string[]
 }
 
-export function create_temp_goal_plan_run(id: string, domain_path: string, problem_path: string, temp_goals_path: string): PlanRunTempGoals {
+export function create_temp_goal_plan_run(id: string, model: PlanningModel, domain_path: string, problem_path: string, temp_goals_path: string): PlanRunTempGoals {
   return {
     id,
+    model,
     status: RunStatus.PENDING,
     domain_path,
     problem_path,
     temp_goals_path,
-    planner: "/home/rebecca/XPP/framework/downward-xaip/fast-downward.py",
+    planner: process.env['PLANNER'],
+    // planner: "/usr/src/FD/fast-downward.py",
     args: [
       '--plan-file', 'plan_path', 
       domain_path, 
@@ -151,6 +155,8 @@ function get_plan(plan_run: PlanRun): Action[] {
     return null
   }
 
+  let action_names = plan_run.model.actions.map(a => a.name)
+
   let plan_folder_path = plans_folder + '/plan' + plan_run.id
   let raw_plan = fs.readFileSync(plan_folder_path,'utf8');
 
@@ -162,6 +168,11 @@ function get_plan(plan_run: PlanRun): Action[] {
   let actions: Action[] = []
   for(let raw_action of raw_plan_actions){
     const parts = raw_action.replace(')','').replace('(','').split(' ');
+    
+    if(! action_names.includes(parts[0])){
+      continue;
+    }
+
     const [name,...args] = parts;
     actions.push({name, arguments: args})
   }
