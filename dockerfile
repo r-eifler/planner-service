@@ -5,10 +5,20 @@ RUN apt-get update
 RUN apt-get upgrade -y
 RUN apt install libffi-dev -y
 
-RUN apt-get install -y make g++
+RUN apt-get install -y make 
+RUN apt-get install -y cmake 
+RUN apt-get install -y g++
 RUN apt-get install -y libboost-all-dev
 RUN apt-get install -y autoconf
-RUN apt-get install -y bison flex
+RUN apt-get install -y bison 
+RUN apt-get install -y flex
+RUN apt-get install -y libgrpc++1
+RUN apt-get install -y libeigen3-dev
+RUN apt-get install -y pkgconf
+RUN apt-get install -y libgrpc++-dev 
+RUN apt-get install -y  libprotobuf-dev
+RUN apt-get install -y  protobuf-compiler
+RUN apt-get install -y  protobuf-compiler-grpc
 
 
 RUN python3 --version
@@ -40,7 +50,7 @@ RUN apt-get install -y spot libspot-dev
 RUN mkdir -p /usr/src/FD
 COPY downward-xaip/ /usr/src/FD/
 WORKDIR /usr/src/FD
-RUN apt-get install -y cmake 
+RUN rm -r builds
 RUN ./build.py
 
 

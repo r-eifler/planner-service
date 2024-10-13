@@ -123,7 +123,7 @@ function run(plan_run: PlanRun): Promise<PlanRun> {
       plan_run.status = RunStatus.RUNNING
       let args = plan_run.args.map(a => a != 'plan_path' ? a : plan_path)
 
-      // console.log(plan_run.planner + ' ' + args.join(' '))
+      console.log(plan_run.planner + ' ' + args.join(' '))
 
       const process = spawn(plan_run.planner, args);
       process.on('close', function (code) { 
