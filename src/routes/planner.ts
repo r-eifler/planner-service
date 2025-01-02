@@ -4,6 +4,7 @@ import fs from 'fs'
 import { create_base_plan_run, create_temp_goal_plan_run, PlanRun, PlanRunTempGoals, RunStatus } from '../run_planner';
 import { agenda } from '..';
 import { toPDDL_domain, toPDDL_problem } from '../pddl';
+import { auth } from '../middleware/auth';
 
 
 export interface MulterFile {
@@ -29,7 +30,7 @@ const storage = multer.diskStorage({
   const upload = multer({ storage: storage });
 
 
-plannerRouter.get('/:id', async (req: Request, res: Response) => {
+plannerRouter.get('/:id', auth, async (req: Request, res: Response) => {
 
     // TODO return status of run with id 
 
@@ -66,7 +67,7 @@ plannerRouter.get('/:id', async (req: Request, res: Response) => {
 // });
 
 
-plannerRouter.post('/', async (req: Request, res: Response) => {
+plannerRouter.post('/', auth, async (req: Request, res: Response) => {
 
   let model = JSON.parse(req.body.model as string)
 
@@ -86,7 +87,7 @@ plannerRouter.post('/', async (req: Request, res: Response) => {
 });
 
 
-plannerRouter.post('/temp-goals', async (req: Request, res: Response) => {
+plannerRouter.post('/temp-goals', auth, async (req: Request, res: Response) => {
 
   console.log(req.body)
 

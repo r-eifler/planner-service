@@ -97,7 +97,10 @@ export async function schedule_run(plan_run: PlanRun, callback: string) {
     const callbackRequest = new Request(callback, 
       {
           method: "POST",
-          headers: {"Content-Type": "application/json"},
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": 'Bearer ' + process.env.PLANNER_KEY
+          },
           body: payload,
       }
     )

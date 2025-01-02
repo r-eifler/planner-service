@@ -6,6 +6,8 @@ RUN apt-get upgrade -y
 RUN apt install libffi-dev -y
 
 RUN apt-get install -y make 
+RUN apt-get update
+RUN apt-get upgrade -y
 RUN apt-get install -y cmake 
 RUN apt-get install -y g++
 RUN apt-get install -y libboost-all-dev

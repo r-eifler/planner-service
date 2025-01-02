@@ -2,9 +2,12 @@ import express from 'express';
 import { plannerRouter } from './routes/planner';
 import { Agenda } from "@hokify/agenda";
 import { PlanRun, schedule_run } from './run_planner';
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
-const port = 3333;
+const port = process.env.PLANNER_SERVICE_PORT || 3333;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -20,6 +23,7 @@ app.listen(port, () => {
 
 
 const mongodbURL = process.env.MONGO || 'localhost:27017/agenda-test';
+console.log("database: " + mongodbURL)
 
 export const agenda = new Agenda({
   db: {address: mongodbURL, collection: 'agendaJobs'},
