@@ -15,21 +15,23 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/plan', plannerRouter);
 
-console.log(process.env['PLANNER'])
+console.log(process.env.PLANNER_SERVICE_PLANNER)
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 
 
-const mongodbURL = process.env.MONGO || 'localhost:27017/agenda-planner';
+const mongodbURL = process.env.PLANNER_MONGO_DB || 'localhost:27017/agenda-planner';
 console.log("database: " + mongodbURL)
+
+const concurrentRuns = Number(process.env.CONCURRENT_PLANNER_RUNS) || 1;
 
 export const agenda = new Agenda({
   db: {address: mongodbURL, collection: 'agendaJobs'},
-  processEvery: '2 seconds',
-  maxConcurrency: 1,
-  defaultConcurrency: 1,
+  processEvery: '5 seconds',
+  maxConcurrency: concurrentRuns,
+  defaultConcurrency: concurrentRuns,
 });
 
 agenda.start().then(

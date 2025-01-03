@@ -1,10 +1,9 @@
 import express, { Express, Request, Response } from 'express';
 import multer, { Multer } from 'multer';
-import fs from 'fs'
-import { create_base_plan_run, create_temp_goal_plan_run, PlanRun, PlanRunTempGoals, RunStatus } from '../run_planner';
+import { create_temp_goal_plan_run } from '../run_planner';
 import { agenda } from '..';
-import { toPDDL_domain, toPDDL_problem } from '../pddl';
 import { auth } from '../middleware/auth';
+import { setupExperimentEnvironment } from '../experiment_utils';
 
 
 export interface MulterFile {
@@ -38,82 +37,46 @@ plannerRouter.get('/:id', auth, async (req: Request, res: Response) => {
 });
 
 
-// plannerRouter.post('/files', upload.any(), async (req: Request, res: Response) => {
 
-//     // console.log(req.files);
+// plannerRouter.post('/', auth, async (req: Request, res: Response) => {
 
-//     if(!req.files){
-//         return res.status(400).json({ error: 'No files uploaded' });
-//     }
+//   try{
 
-//     let files = req.files as Express.Multer.File[]
+//     let model = JSON.parse(req.body.model as string)
 
-//     let domain = files.find(f1 => f1.fieldname == 'domain')
-//     if (!domain) {
-//         return res.status(400).json({ error: 'No domain uploaded' });
-//     }
+//     let domain_path = './uploads/' + Date.now() + 'domain.pddl'
+//     let problem_path = './uploads/' + Date.now() + 'problem.pddl'
 
-//     let problem = files.find(f2 => f2.fieldname == 'problem')
-//     if (!problem) {
-//         return res.status(400).json({ error: 'No problem uploaded' });
-//     }
 
-//     let plan_run = create_base_plan_run('run-' + Date.now(), domain.path, problem.path);
+//     fs.writeFileSync(domain_path, toPDDL_domain(model));
+//     fs.writeFileSync(problem_path, toPDDL_problem(model));;
+
+//     let plan_run = create_base_plan_run('run-' + Date.now(), model, domain_path, problem_path);
 
 //     res.status(201).send({id: plan_run.id, status: plan_run.status});
 
 //     agenda.now('planner call', [plan_run, req.body.callback])
-    
-// });
 
-
-plannerRouter.post('/', auth, async (req: Request, res: Response) => {
-
-  try{
-
-    let model = JSON.parse(req.body.model as string)
-
-    let domain_path = './uploads/' + Date.now() + 'domain.pddl'
-    let problem_path = './uploads/' + Date.now() + 'problem.pddl'
-
-
-    fs.writeFileSync(domain_path, toPDDL_domain(model));
-    fs.writeFileSync(problem_path, toPDDL_problem(model));;
-
-    let plan_run = create_base_plan_run('run-' + Date.now(), model, domain_path, problem_path);
-
-    res.status(201).send({id: plan_run.id, status: plan_run.status});
-
-    agenda.now('planner call', [plan_run, req.body.callback])
-
-  }
-  catch(err){
-    console.log(err);
-    res.status(500).send();
-  }
+//   }
+//   catch(err){
+//     console.log(err);
+//     res.status(500).send();
+//   }
   
-});
+// });
 
 
 plannerRouter.post('/temp-goals', auth, async (req: Request, res: Response) => {
 
   try{
 
-    console.log(req.body)
-
     let model = JSON.parse(req.body.model as string)
     let temp_goals = req.body.temp_goals as string
+    const refId = req.body.id as string;
 
-    let domain_path = './uploads/' + Date.now() + 'domain.pddl'
-    let problem_path = './uploads/' + Date.now() + 'problem.pddl'
-    let temp_goals_path = './uploads/' + Date.now() + 'temp_goals.json'
+    setupExperimentEnvironment(model, temp_goals, refId);
 
-
-    fs.writeFileSync(domain_path, toPDDL_domain(model));
-    fs.writeFileSync(problem_path, toPDDL_problem(model));
-    fs.writeFileSync(temp_goals_path, temp_goals)
-
-    let plan_run = create_temp_goal_plan_run('run-' + Date.now(), model, domain_path, problem_path, temp_goals_path);
+    let plan_run = create_temp_goal_plan_run(refId, model);
 
     res.status(201).send({id: plan_run.id, status: plan_run.status});
 

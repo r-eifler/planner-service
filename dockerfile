@@ -57,8 +57,7 @@ RUN ./build.py
 
 
 RUN mkdir -p /usr/src/app/src
-RUN mkdir -p /usr/src/app/uploads
-RUN mkdir -p /usr/src/app/plans
+RUN mkdir -p /usr/temp
 
 #install Node.js
 WORKDIR /usr/src/app
@@ -78,7 +77,8 @@ RUN npm install -g ts-node
 # run
 EXPOSE 3333
 
-ENV PLANNER="/usr/src/FD/fast-downward.py"
+ENV PLANNER_SERVICE_PLANNER="/usr/src/FD/fast-downward.py"
+ENV TEMP_RUN_FOLDERS="usr/temp"
 
 WORKDIR /usr/src/app/
 CMD npm start

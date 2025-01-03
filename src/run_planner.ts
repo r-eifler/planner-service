@@ -17,58 +17,43 @@ export interface PlanRun {
   id: string,
   model: PlanningModel,
   status: RunStatus,
-  domain_path: string,
-  problem_path: string,
+  experiment_path: string,
   planner: string,
   args: string[]
 }
 
-export function create_base_plan_run(id: string, model: PlanningModel, domain_path: string, problem_path: string): PlanRun {
+export function create_base_plan_run(id: string, model: PlanningModel): PlanRun {
   return {
     id,
     model,
     status: RunStatus.PENDING,
-    domain_path,
-    problem_path,
+    experiment_path: process.env.TEMP_RUN_FOLDERS + '/' + id,
     planner: "/home/rebecca/TUPLES/use_cases/beluga/apptainer/fast-downward.sif",
     args: [
       '--plan-file', "plan_path", 
-      domain_path, 
-      problem_path, 
+      'domain.pddl', 
+      'problem.pddl', 
       '--search', 'astar(hmax())'
     ]
   }
 }
 
-export interface PlanRunTempGoals extends PlanRun{
-  id: string,
-  status: RunStatus,
-  domain_path: string,
-  problem_path: string,
-  temp_goals_path: string
-  planner: string,
-  args: string[]
-}
 
-export function create_temp_goal_plan_run(id: string, model: PlanningModel, domain_path: string, problem_path: string, temp_goals_path: string): PlanRunTempGoals {
+export function create_temp_goal_plan_run(id: string, model: PlanningModel): PlanRun {
   return {
     id,
     model,
     status: RunStatus.PENDING,
-    domain_path,
-    problem_path,
-    temp_goals_path,
-    planner: process.env['PLANNER'],
-    // planner: "/usr/src/FD/fast-downward.py",
+    experiment_path: process.env.TEMP_RUN_FOLDERS + '/' + id,
+    planner: process.env.PLANNER_SERVICE_PLANNER,
     args: [
-      '--plan-file', 'plan_path', 
-      domain_path, 
-      problem_path, 
+      '--plan-file', 'plan', 
+      'domain.pddl', 
+      'problem.pddl', 
       '--translate-options',
-      '--explanation-settings', temp_goals_path,
+      '--explanation-settings', 'temp_goals.json',
       '--search-options',
       '--search', 'astar(hmax())'
-      // 'gsastar(evals=[blind], eval=ngs(hmax(no_deadends=true)))'
     ]
   }
 }
@@ -113,13 +98,16 @@ export async function schedule_run(plan_run: PlanRun, callback: string) {
             error => console.log(error)
         )
 
+      // clean up
+      // fs.rmSync(plan_run.experiment_path, { recursive: true, force: true });
+
   }
 
 
 function run(plan_run: PlanRun): Promise<PlanRun> {
 
     // create result folder
-    let plan_path = plans_folder + '/plan' + plan_run.id
+    let plan_path = plan_run.experiment_path + '/plan' + plan_run.id
 
     return new Promise(function (resolve, reject) {
 
@@ -128,8 +116,14 @@ function run(plan_run: PlanRun): Promise<PlanRun> {
 
       console.log(plan_run.planner + ' ' + args.join(' '))
 
-      const process = spawn(plan_run.planner, args);
-      process.on('close', function (code) { 
+      const options = {
+        cwd: plan_run.experiment_path,
+        env: process.env,
+      };
+
+      const planProcess = spawn(plan_run.planner, args, options);
+
+      planProcess.on('close', function (code) { 
         switch(code) {
           case 0:
             plan_run.status = RunStatus.SOLVED
@@ -144,7 +138,7 @@ function run(plan_run: PlanRun): Promise<PlanRun> {
         console.log("ReturnCode: " + code);
         resolve(plan_run);
       });
-      process.on('error', function (err) {
+      planProcess.on('error', function (err) {
         plan_run.status = RunStatus.FAILED
         // console.log("Error: " + err)
         reject(err);
@@ -160,7 +154,7 @@ function get_plan(plan_run: PlanRun): Action[] {
 
   let action_names = plan_run.model.actions.map(a => a.name)
 
-  let plan_folder_path = plans_folder + '/plan' + plan_run.id
+  let plan_folder_path = plan_run.experiment_path + '/plan'
   let raw_plan = fs.readFileSync(plan_folder_path,'utf8');
 
   let raw_plan_actions = raw_plan.split('\n');
