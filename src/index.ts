@@ -22,7 +22,7 @@ app.listen(port, () => {
 });
 
 
-const mongodbURL = process.env.MONGO || 'localhost:27017/agenda-test';
+const mongodbURL = process.env.MONGO || 'localhost:27017/agenda-planner';
 console.log("database: " + mongodbURL)
 
 export const agenda = new Agenda({

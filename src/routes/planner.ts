@@ -69,44 +69,60 @@ plannerRouter.get('/:id', auth, async (req: Request, res: Response) => {
 
 plannerRouter.post('/', auth, async (req: Request, res: Response) => {
 
-  let model = JSON.parse(req.body.model as string)
+  try{
 
-  let domain_path = './uploads/' + Date.now() + 'domain.pddl'
-  let problem_path = './uploads/' + Date.now() + 'problem.pddl'
+    let model = JSON.parse(req.body.model as string)
+
+    let domain_path = './uploads/' + Date.now() + 'domain.pddl'
+    let problem_path = './uploads/' + Date.now() + 'problem.pddl'
 
 
-  fs.writeFileSync(domain_path, toPDDL_domain(model));
-  fs.writeFileSync(problem_path, toPDDL_problem(model));;
+    fs.writeFileSync(domain_path, toPDDL_domain(model));
+    fs.writeFileSync(problem_path, toPDDL_problem(model));;
 
-  let plan_run = create_base_plan_run('run-' + Date.now(), model, domain_path, problem_path);
+    let plan_run = create_base_plan_run('run-' + Date.now(), model, domain_path, problem_path);
 
-  res.status(201).send({id: plan_run.id, status: plan_run.status});
+    res.status(201).send({id: plan_run.id, status: plan_run.status});
 
-  agenda.now('planner call', [plan_run, req.body.callback])
+    agenda.now('planner call', [plan_run, req.body.callback])
+
+  }
+  catch(err){
+    console.log(err);
+    res.status(500).send();
+  }
   
 });
 
 
 plannerRouter.post('/temp-goals', auth, async (req: Request, res: Response) => {
 
-  console.log(req.body)
+  try{
 
-  let model = JSON.parse(req.body.model as string)
-  let temp_goals = req.body.temp_goals as string
+    console.log(req.body)
 
-  let domain_path = './uploads/' + Date.now() + 'domain.pddl'
-  let problem_path = './uploads/' + Date.now() + 'problem.pddl'
-  let temp_goals_path = './uploads/' + Date.now() + 'temp_goals.json'
+    let model = JSON.parse(req.body.model as string)
+    let temp_goals = req.body.temp_goals as string
+
+    let domain_path = './uploads/' + Date.now() + 'domain.pddl'
+    let problem_path = './uploads/' + Date.now() + 'problem.pddl'
+    let temp_goals_path = './uploads/' + Date.now() + 'temp_goals.json'
 
 
-  fs.writeFileSync(domain_path, toPDDL_domain(model));
-  fs.writeFileSync(problem_path, toPDDL_problem(model));
-  fs.writeFileSync(temp_goals_path, temp_goals)
+    fs.writeFileSync(domain_path, toPDDL_domain(model));
+    fs.writeFileSync(problem_path, toPDDL_problem(model));
+    fs.writeFileSync(temp_goals_path, temp_goals)
 
-  let plan_run = create_temp_goal_plan_run('run-' + Date.now(), model, domain_path, problem_path, temp_goals_path);
+    let plan_run = create_temp_goal_plan_run('run-' + Date.now(), model, domain_path, problem_path, temp_goals_path);
 
-  res.status(201).send({id: plan_run.id, status: plan_run.status});
+    res.status(201).send({id: plan_run.id, status: plan_run.status});
 
-  agenda.now('planner call', [plan_run, req.body.callback])
+    agenda.now('planner call', [plan_run, req.body.callback])
+
+  }
+  catch(err){
+    console.log(err);
+    res.status(500).send();
+  }
   
 });
