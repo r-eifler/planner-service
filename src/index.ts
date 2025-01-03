@@ -40,9 +40,9 @@ agenda.start().then(
 );
 
 agenda.define('planner call', async job => {
-  let plan_run = job.attrs.data[0] as PlanRun;
-  let callback  = job.attrs.data[1]as string
+  let plan_run = job.attrs.data[1] as PlanRun;
+  let callback  = job.attrs.data[2]as string
   console.log("Schedule job: " + plan_run.id);
-  schedule_run(plan_run, callback);
+  schedule_run(plan_run, callback,job);
 });
 

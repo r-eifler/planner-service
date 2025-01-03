@@ -2,6 +2,7 @@ import {spawn} from 'child_process';
 import * as fs from 'fs';
 import { Action } from './interfaces';
 import { PlanningModel } from './pddl';
+import { Job } from '@hokify/agenda';
 
 export enum RunStatus {
   PENDING = "PENDING",
@@ -60,9 +61,9 @@ export function create_temp_goal_plan_run(id: string, model: PlanningModel): Pla
 
 
 
-export async function schedule_run(plan_run: PlanRun, callback: string) {
+export async function schedule_run(plan_run: PlanRun, callback: string, job: Job<any>) {
 
-    await run(plan_run);
+    await run(plan_run, job);
 
     let data = {
         id: plan_run.id,
@@ -99,20 +100,18 @@ export async function schedule_run(plan_run: PlanRun, callback: string) {
         )
 
       // clean up
-      // fs.rmSync(plan_run.experiment_path, { recursive: true, force: true });
+      fs.rmSync(plan_run.experiment_path, { recursive: true, force: true });
 
   }
 
 
-function run(plan_run: PlanRun): Promise<PlanRun> {
+function run(plan_run: PlanRun, job: Job<any>): Promise<PlanRun> {
 
-    // create result folder
-    let plan_path = plan_run.experiment_path + '/plan' + plan_run.id
 
     return new Promise(function (resolve, reject) {
 
       plan_run.status = RunStatus.RUNNING
-      let args = plan_run.args.map(a => a != 'plan_path' ? a : plan_path)
+      let args = plan_run.args
 
       console.log(plan_run.planner + ' ' + args.join(' '))
 
@@ -122,6 +121,9 @@ function run(plan_run: PlanRun): Promise<PlanRun> {
       };
 
       const planProcess = spawn(plan_run.planner, args, options);
+
+      job.attrs.data.push(planProcess.pid);
+      job.save();
 
       planProcess.on('close', function (code) { 
         switch(code) {
