@@ -78,7 +78,7 @@ RUN npm install -g ts-node
 EXPOSE 3333
 
 ENV PLANNER_SERVICE_PLANNER="/usr/src/FD/fast-downward.py"
-ENV TEMP_RUN_FOLDERS="usr/temp"
+ENV TEMP_RUN_FOLDERS="/usr/temp"
 
 WORKDIR /usr/src/app/
 CMD npm start
