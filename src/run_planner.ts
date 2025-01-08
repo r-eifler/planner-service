@@ -125,6 +125,16 @@ function run(plan_run: PlanRun, job: Job<any>): Promise<PlanRun> {
       job.attrs.data.push(planProcess.pid);
       job.save();
 
+      if(process.env.DEBUG == 'true'){
+        planProcess.stdout.on('data', (data) => {
+          console.log(`stdout: ${data}`);
+        });
+        
+        planProcess.stderr.on('data', (data) => {
+          console.error(`stderr: ${data}`);
+        });
+      }
+
       planProcess.on('close', function (code) { 
         switch(code) {
           case 0:

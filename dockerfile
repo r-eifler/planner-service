@@ -23,6 +23,11 @@ RUN apt-get install -y  protobuf-compiler
 RUN apt-get install -y  protobuf-compiler-grpc
 
 
+RUN apt-get remove -y python3.12
+RUN apt-get install -y software-properties-common
+RUN add-apt-repository ppa:deadsnakes/ppa -y
+RUN apt-get update -y
+RUN apt-get install -y python3.11
 RUN python3 --version
 RUN apt-get install -y python3-pip
 RUN python3 -m pip install numpy --break-system-packages
@@ -79,6 +84,7 @@ EXPOSE 3333
 
 ENV PLANNER_SERVICE_PLANNER="/usr/src/FD/fast-downward.py"
 ENV TEMP_RUN_FOLDERS="/usr/temp"
+ENV LTL2HAO_PATH="/usr/src/ltlfkit/"
 
 WORKDIR /usr/src/app/
 CMD npm start
