@@ -63,7 +63,11 @@ export function create_temp_goal_plan_run(id: string, model: PlanningModel): Pla
 
 export async function schedule_run(plan_run: PlanRun, callback: string, job: Job<any>) {
 
-    await run(plan_run, job);
+    const sendBack = await run(plan_run, job);
+    if(! sendBack){
+      console.log('Do not send response');
+      return
+    }
 
     let data = {
         id: plan_run.id,
@@ -105,22 +109,35 @@ export async function schedule_run(plan_run: PlanRun, callback: string, job: Job
   }
 
 
-function run(plan_run: PlanRun, job: Job<any>): Promise<PlanRun> {
+function run(plan_run: PlanRun, job: Job<any>): Promise<boolean> {
 
 
     return new Promise(function (resolve, reject) {
 
+      // check if run has not already been done/ experiment folder still exists
+      if(!fs.existsSync(plan_run.experiment_path)){
+        console.log('Experiment folder does not exists anymore');
+        resolve(false)
+      }
+
       plan_run.status = RunStatus.RUNNING
       let args = plan_run.args
 
-      console.log(plan_run.planner + ' ' + args.join(' '))
+      // console.log(plan_run.planner + ' ' + args.join(' '))
 
       const options = {
         cwd: plan_run.experiment_path,
         env: process.env,
       };
 
-      const planProcess = spawn(plan_run.planner, args, options);
+      let planProcess = null;
+      try{
+        planProcess = spawn(plan_run.planner, args, options);
+      }
+      catch(err){
+        plan_run.status = RunStatus.FAILED
+        resolve(true);
+      }
 
       job.attrs.data.push(planProcess.pid);
       job.save();
@@ -148,12 +165,12 @@ function run(plan_run: PlanRun, job: Job<any>): Promise<PlanRun> {
             break;
         }
         console.log("ReturnCode: " + code);
-        resolve(plan_run);
+        resolve(true);
       });
       planProcess.on('error', function (err) {
         plan_run.status = RunStatus.FAILED
         // console.log("Error: " + err)
-        reject(err);
+        reject(true);
       });
     });
   }
