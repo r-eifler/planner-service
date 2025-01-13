@@ -117,7 +117,7 @@ function run(plan_run: PlanRun, job: Job<any>): Promise<boolean> {
       // check if run has not already been done/ experiment folder still exists
       if(!fs.existsSync(plan_run.experiment_path)){
         console.log('Experiment folder does not exists anymore');
-        resolve(false)
+        return resolve(false)
       }
 
       plan_run.status = RunStatus.RUNNING
@@ -165,12 +165,12 @@ function run(plan_run: PlanRun, job: Job<any>): Promise<boolean> {
             break;
         }
         console.log("ReturnCode: " + code);
-        resolve(true);
+        return resolve(true);
       });
       planProcess.on('error', function (err) {
         plan_run.status = RunStatus.FAILED
         // console.log("Error: " + err)
-        reject(true);
+        return reject(true);
       });
     });
   }
