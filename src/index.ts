@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-app.use('/plan', plannerRouter);
+app.use('', plannerRouter);
 
 console.log("Planner:")
 console.log(process.env.PLANNER_SERVICE_PLANNER)
@@ -21,7 +21,7 @@ console.log("Dependencies:")
 console.log(process.env.LTL2HAO_PATH)
 
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Server is running on port ${port}`);
 });
 
 

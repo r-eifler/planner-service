@@ -4,31 +4,11 @@ import { create_temp_goal_plan_run } from '../run_planner';
 import { agenda } from '..';
 import { auth } from '../middleware/auth';
 import { setupExperimentEnvironment } from '../experiment_utils';
+import { PlannerRequest } from '../domain/service_communication';
 
 var kill = require('tree-kill');
 
-
-export interface MulterFile {
-    key: string // Available using `S3`.
-    path: string // Available using `DiskStorage`.
-    mimetype: string
-    originalname: string
-    size: number
-  }
-
 export const plannerRouter = express.Router();
-
-
-const storage = multer.diskStorage({
-    destination: (req: Request, file, cb) => {
-      cb(null, 'uploads/');
-    },
-    filename: (req: Request, file, cb) => {
-      cb(null, Date.now() + '-' + file.originalname);
-    }
-  });
-  
-  const upload = multer({ storage: storage });
 
 
 plannerRouter.get('/:id', auth, async (req: Request, res: Response) => {
@@ -39,44 +19,20 @@ plannerRouter.get('/:id', auth, async (req: Request, res: Response) => {
 });
 
 
-
-// plannerRouter.post('/', auth, async (req: Request, res: Response) => {
-
-//   try{
-
-//     let model = JSON.parse(req.body.model as string)
-
-//     let domain_path = './uploads/' + Date.now() + 'domain.pddl'
-//     let problem_path = './uploads/' + Date.now() + 'problem.pddl'
-
-
-//     fs.writeFileSync(domain_path, toPDDL_domain(model));
-//     fs.writeFileSync(problem_path, toPDDL_problem(model));;
-
-//     let plan_run = create_base_plan_run('run-' + Date.now(), model, domain_path, problem_path);
-
-//     res.status(201).send({id: plan_run.id, status: plan_run.status});
-
-//     agenda.now('planner call', [plan_run, req.body.callback])
-
-//   }
-//   catch(err){
-//     console.log(err);
-//     res.status(500).send();
-//   }
-  
-// });
-
-
-plannerRouter.post('/temp-goals', auth, async (req: Request, res: Response) => {
+plannerRouter.post('/plan', auth, async (req: Request, res: Response) => {
 
   try{
 
-    let model = JSON.parse(req.body.model as string)
-    let temp_goals = req.body.temp_goals as string
-    const refId = req.body.id as string;
+    const request = req.body as PlannerRequest
 
-    setupExperimentEnvironment(model, temp_goals, refId);
+    if(process.env.DEBUG){
+      console.log(request);
+    }
+
+    let model = request.model;
+    const refId = request.id;
+
+    setupExperimentEnvironment(model, {plan_properties: request.goals, hard_goals: request.hardGoals, soft_goals: []}, refId);
 
     let plan_run = create_temp_goal_plan_run(refId, model);
 
@@ -111,9 +67,6 @@ plannerRouter.post('/cancel', auth, async (req: Request, res: Response) => {
     console.log("Cancel Process: " + cancelJob.attrs.data[3]);
     cancelJob.cancel();
     kill(cancelJob.attrs.data[3], 'SIGKILL');
-    // console.log(cancelJob);
-    // const result = await cancelJob.remove();
-    // console.log("Canceled: " + result);
     res.status(201).send();
   }
   catch(err){

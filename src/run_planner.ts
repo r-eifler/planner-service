@@ -1,42 +1,20 @@
 import {spawn} from 'child_process';
 import * as fs from 'fs';
-import { Action } from './interfaces';
 import { PlanningModel } from './pddl';
 import { Job } from '@hokify/agenda';
+import { PlanRunStatus } from './domain/service_communication';
+import { Action } from './domain/action_set';
 
-export enum RunStatus {
-  PENDING = "PENDING",
-  RUNNING = "RUNNING",
-  FAILED = "FAILED",
-  SOLVED = "SOLVED",
-  UNSOLVABLE = "UNSOLVABLE"
-}
 
 const plans_folder = "plans"
 
 export interface PlanRun {
   id: string,
   model: PlanningModel,
-  status: RunStatus,
+  status: PlanRunStatus,
   experiment_path: string,
   planner: string,
   args: string[]
-}
-
-export function create_base_plan_run(id: string, model: PlanningModel): PlanRun {
-  return {
-    id,
-    model,
-    status: RunStatus.PENDING,
-    experiment_path: process.env.TEMP_RUN_FOLDERS + '/' + id,
-    planner: "/home/rebecca/TUPLES/use_cases/beluga/apptainer/fast-downward.sif",
-    args: [
-      '--plan-file', "plan_path", 
-      'domain.pddl', 
-      'problem.pddl', 
-      '--search', 'astar(hmax())'
-    ]
-  }
 }
 
 
@@ -44,7 +22,7 @@ export function create_temp_goal_plan_run(id: string, model: PlanningModel): Pla
   return {
     id,
     model,
-    status: RunStatus.PENDING,
+    status: PlanRunStatus.pending,
     experiment_path: process.env.TEMP_RUN_FOLDERS + '/' + id,
     planner: process.env.PLANNER_SERVICE_PLANNER,
     args: [
@@ -75,7 +53,7 @@ export async function schedule_run(plan_run: PlanRun, callback: string, job: Job
         actions: []
     }
 
-    if(plan_run.status == RunStatus.SOLVED){
+    if(plan_run.status == PlanRunStatus.plan_found){
         data.actions = get_plan(plan_run)
     }
 
@@ -120,7 +98,7 @@ function run(plan_run: PlanRun, job: Job<any>): Promise<boolean> {
         return resolve(false)
       }
 
-      plan_run.status = RunStatus.RUNNING
+      plan_run.status = PlanRunStatus.running
       let args = plan_run.args
 
       // console.log(plan_run.planner + ' ' + args.join(' '))
@@ -135,7 +113,7 @@ function run(plan_run: PlanRun, job: Job<any>): Promise<boolean> {
         planProcess = spawn(plan_run.planner, args, options);
       }
       catch(err){
-        plan_run.status = RunStatus.FAILED
+        plan_run.status = PlanRunStatus.failed
         resolve(true);
       }
 
@@ -155,21 +133,20 @@ function run(plan_run: PlanRun, job: Job<any>): Promise<boolean> {
       planProcess.on('close', function (code) { 
         switch(code) {
           case 0:
-            plan_run.status = RunStatus.SOLVED
+            plan_run.status = PlanRunStatus.plan_found;
             break;
           case 12:
-            plan_run.status = RunStatus.UNSOLVABLE
+            plan_run.status = PlanRunStatus.not_solvable;
             break;
           default:
-            plan_run.status = RunStatus.FAILED
+            plan_run.status = PlanRunStatus.failed;
             break;
         }
         console.log("ReturnCode: " + code);
         return resolve(true);
       });
       planProcess.on('error', function (err) {
-        plan_run.status = RunStatus.FAILED
-        // console.log("Error: " + err)
+        plan_run.status = PlanRunStatus.failed;
         return reject(true);
       });
     });
@@ -177,7 +154,7 @@ function run(plan_run: PlanRun, job: Job<any>): Promise<boolean> {
 
   
 function get_plan(plan_run: PlanRun): Action[] {
-  if(plan_run.status != RunStatus.SOLVED){
+  if(plan_run.status != PlanRunStatus.plan_found){
     return null
   }
 
@@ -200,7 +177,7 @@ function get_plan(plan_run: PlanRun): Action[] {
     }
 
     const [name,...args] = parts;
-    actions.push({name, arguments: args})
+    actions.push({name, params: args})
   }
   return actions
 }
