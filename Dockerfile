@@ -47,7 +47,7 @@ RUN bash -c 'echo -e ++++++++++++++++++++++++++ `pwd`'
 RUN make install-strip
 
 #spot
-RUN apt-get install -y wget gnupg
+RUN apt-get install -y ca-certificates wget gnupg
 RUN wget -q -O - https://www.lrde.epita.fr/repo/debian.gpg | apt-key add -
 RUN echo 'deb http://www.lrde.epita.fr/repo/debian/ stable/' >> /etc/apt/sources.list
 RUN apt-get update
@@ -57,7 +57,7 @@ RUN apt-get install -y spot libspot-dev
 RUN mkdir -p /usr/src/FD
 COPY downward-xaip/ /usr/src/FD/
 WORKDIR /usr/src/FD
-RUN rm -r builds
+RUN rm -rf builds
 RUN ./build.py
 
 
