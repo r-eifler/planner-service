@@ -1,0 +1,6 @@
+[submodule "ltlfkit"]
+	path = ltlfkit
+	url = https://bitbucket.org/acamacho/ltlfkit.git
+[submodule "downward-xaip"]
+	path = downward-xaip
+	url = git@github.com:r-eifler/downward-xaip.git
