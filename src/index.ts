@@ -1,13 +1,17 @@
 import express from 'express';
 import { plannerRouter } from './routes/planner';
 import { Agenda } from "@hokify/agenda";
-import { PlanRun, schedule_run } from './run_planner';
+import { schedule_run } from './planner/run_planner';
 import * as dotenv from "dotenv";
+import { PlanRun } from './domain/plan-run';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PLANNER_SERVICE_PORT || 3333;
+
+console.log("Debug output: " + process.env.DEBUG_OUTPUT);
+console.log("folder to temporally store the experiment data: " + process.env.TEMP_RUN_FOLDERS);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -44,8 +48,7 @@ agenda.start().then(
 
 agenda.define('planner call', async job => {
   let plan_run = job.attrs.data[1] as PlanRun;
-  let callback  = job.attrs.data[2]as string
-  console.log("Schedule job: " + plan_run.id);
-  schedule_run(plan_run, callback,job);
+  console.log("Schedule job: " + plan_run.request.id);
+  schedule_run(plan_run, job);
 });
 
