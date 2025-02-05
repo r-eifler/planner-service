@@ -12,6 +12,10 @@ const port = process.env.PLANNER_SERVICE_PORT || 3333;
 
 console.log("Debug output: " + process.env.DEBUG_OUTPUT);
 console.log("folder to temporally store the experiment data: " + process.env.TEMP_RUN_FOLDERS);
+console.log("Planner:")
+console.log(process.env.PLANNER_SERVICE_PLANNER)
+console.log("Dependencies:")
+console.log(process.env.LTL2HAO_PATH)
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -19,14 +23,10 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('', plannerRouter);
 
-console.log("Planner:")
-console.log(process.env.PLANNER_SERVICE_PLANNER)
-console.log("Dependencies:")
-console.log(process.env.LTL2HAO_PATH)
-
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
 
 
 const mongodbURL = process.env.PLANNER_MONGO_DB || 'localhost:27017/agenda-planner';
