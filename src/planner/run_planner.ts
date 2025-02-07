@@ -30,6 +30,11 @@ export async function schedule_run(plan_run: PlanRun, job: Job<any>) {
 
     const request = plan_run.request;
 
+    if(plan_run.status !== PlanRunStatus.pending){
+      console.log('Do not run again: ' + plan_run.request.id);
+      return;
+    }
+
     setupExperimentEnvironment(request.model, 
       {
         plan_properties: request.goals, 
@@ -46,6 +51,9 @@ export async function schedule_run(plan_run: PlanRun, job: Job<any>) {
     }
 
 	  sendResults(plan_run);
+
+    job.attrs.data[1] = plan_run;
+    job.save();
 
     cleanUpExperimentEnvironment(plan_run.experiment_path)
 
@@ -64,6 +72,8 @@ function runPlanner(plan_run: PlanRun, job: Job<any>): Promise<boolean> {
       // }
 
       plan_run.status = PlanRunStatus.running
+      job.attrs.data[1] = plan_run;
+      job.save();
       let args = plan_run.args
 
       // console.log(plan_run.planner + ' ' + args.join(' '))
@@ -179,7 +189,7 @@ function sendResults(plan_run: PlanRun) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": 'Bearer ' + process.env.PLANNER_KEY
+          "Authorization": 'Bearer ' + process.env.SERVICE_KEY
         },
         body: payload,
     }
