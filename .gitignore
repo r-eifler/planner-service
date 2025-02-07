@@ -3,3 +3,7 @@ plans/*
 sas_plan
 uploads/*
 node_modules/*
+.env
+temp/
+test
+venv
