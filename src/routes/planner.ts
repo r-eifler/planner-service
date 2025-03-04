@@ -57,7 +57,7 @@ plannerRouter.post('/cancel', auth, async (req: Request, res: Response) => {
 
     const cancelJob = jobs.filter(j => j['attrs'].data[0] === refId)[0];
 
-    if (cancelJob === undefined){
+    if (cancelJob === undefined || cancelJob.attrs.data[2]){
       if(process.env.DEBUG_OUTPUT === 'true'){
         console.log("Job to cancel does not exist.");
       }

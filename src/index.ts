@@ -8,7 +8,7 @@ import { PlanRun } from './domain/plan-run';
 dotenv.config();
 
 const app = express();
-const port = process.env.PLANNER_SERVICE_PORT || 3333;
+const port = process.env.PORT || 3333;
 
 console.log("Debug output: " + process.env.DEBUG_OUTPUT);
 console.log("folder to temporally store the experiment data: " + process.env.TEMP_RUN_FOLDERS);
@@ -29,10 +29,10 @@ app.listen(port, () => {
 
 
 
-const mongodbURL = process.env.PLANNER_MONGO_DB || 'localhost:27017/agenda-planner';
-console.log("database: " + mongodbURL)
+const mongodbURL = process.env.MONGO_DB || 'localhost:27017/agenda-planner';
+console.log("Database: " + mongodbURL);
 
-const concurrentRuns = Number(process.env.CONCURRENT_PLANNER_RUNS) || 1;
+const concurrentRuns = Number(process.env.CONCURRENT_RUNS) || 1;
 
 export const agenda = new Agenda({
   db: {address: mongodbURL, collection: 'agendaJobs'},
