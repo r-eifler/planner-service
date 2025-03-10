@@ -9,7 +9,7 @@ import { PlanRun } from '../domain/plan-run';
 export function create_temp_goal_plan_run(request: PlannerRequest): PlanRun {
   return {
     request,
-    status: PlanRunStatus.pending,
+    status: PlanRunStatus.PENDING,
     experiment_path: process.env.TEMP_RUN_FOLDERS + '/' + request.id,
     planner: process.env.PLANNER_SERVICE_PLANNER,
     args: [
@@ -30,7 +30,7 @@ export async function schedule_run(plan_run: PlanRun, job: Job<any>) {
 
     const request = plan_run.request;
 
-    if(plan_run.status !== PlanRunStatus.pending){
+    if(plan_run.status !== PlanRunStatus.PENDING){
       console.log('Do not run again: ' + plan_run.request.id);
       return;
     }
@@ -71,7 +71,7 @@ function runPlanner(plan_run: PlanRun, job: Job<any>): Promise<boolean> {
       //   return resolve(false)
       // }
 
-      plan_run.status = PlanRunStatus.running
+      plan_run.status = PlanRunStatus.RUNNING
       job.attrs.data[1] = plan_run;
       job.save();
       let args = plan_run.args
@@ -88,7 +88,7 @@ function runPlanner(plan_run: PlanRun, job: Job<any>): Promise<boolean> {
         planProcess = spawn(plan_run.planner, args, options);
       }
       catch(err){
-        plan_run.status = PlanRunStatus.failed
+        plan_run.status = PlanRunStatus.FAILED
         resolve(true);
       }
 
@@ -109,13 +109,13 @@ function runPlanner(plan_run: PlanRun, job: Job<any>): Promise<boolean> {
       planProcess.on('close', function (code) { 
         switch(code) {
           case 0:
-            plan_run.status = PlanRunStatus.plan_found;
+            plan_run.status = PlanRunStatus.SOLVED;
             break;
           case 12:
-            plan_run.status = PlanRunStatus.not_solvable;
+            plan_run.status = PlanRunStatus.UNSOLVABLE;
             break;
           default:
-            plan_run.status = PlanRunStatus.failed;
+            plan_run.status = PlanRunStatus.FAILED;
             break;
         }
         if(process.env.DEBUG_OUTPUT === 'true'){
@@ -124,7 +124,7 @@ function runPlanner(plan_run: PlanRun, job: Job<any>): Promise<boolean> {
         return resolve(true);
       });
       planProcess.on('error', function (err) {
-        plan_run.status = PlanRunStatus.failed;
+        plan_run.status = PlanRunStatus.FAILED;
         return reject(true);
       });
     });
@@ -132,7 +132,7 @@ function runPlanner(plan_run: PlanRun, job: Job<any>): Promise<boolean> {
 
   
 function get_plan(plan_run: PlanRun): Action[] {
-  if(plan_run.status != PlanRunStatus.plan_found){
+  if(plan_run.status != PlanRunStatus.SOLVED){
     return null
   }
 
@@ -173,7 +173,7 @@ function sendResults(plan_run: PlanRun) {
       actions: []
   }
 
-  if(plan_run.status == PlanRunStatus.plan_found){
+  if(plan_run.status == PlanRunStatus.SOLVED){
       data.actions = get_plan(plan_run)
   }
 

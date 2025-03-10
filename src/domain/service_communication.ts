@@ -3,12 +3,13 @@ import { PlanProperty } from "./plan_property";
 
 
 export enum PlanRunStatus {
-    pending,
-    running,
-    failed,
-    plan_found,
-    not_solvable,
-    canceled,
+    PENDING = "PENDING",
+    RUNNING = "RUNNING",
+    SOLVED = "SOLVED",
+    UNSOLVABLE = "UNSOLVABLE",
+    NO_PLAN_FOUND = "NO_PLAN_FOUND",
+    CANCELED = "CANCELED",
+    FAILED = "FAILED",
 }
 
 export interface PlannerRequest  {
