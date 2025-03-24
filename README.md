@@ -25,7 +25,7 @@ For the dependencies of the planner and the ltlf translator, we refer to
 respective repositories:
 
 - [Planner](https://github.com/r-eifler/downward-xaip)
-- [LTL Translator]()
+- [LTL Translator](https://bitbucket.org/acamacho/ltlfkit)
 
 
 Before the first run install npm packages with:
